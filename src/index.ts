@@ -1,11 +1,39 @@
 import express, { Request, Response } from 'express';
+import dotenv from "dotenv";
+import connectDB from "./config/db";
+import clinicRoutes from "./routes/clinicRoutes";
+import userRoutes from "./routes/userRoutes";
+import visitRoutes from "./routes/visitRoutes";
+import cors from 'cors';
+
+
+
+
+
+// Load environment variables from .env file
+dotenv.config();
+
+// Connect to the database
+connectDB();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 1000;
+
+
+
+app.use(cors());
+
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Routes
+
+app.use("/api/users", userRoutes);
+app.use("/api/clinics", clinicRoutes);
+app.use("/api/visits", visitRoutes);
+
 
 // Routes
 app.get('/', (req: Request, res: Response) => {
@@ -37,4 +65,5 @@ app.listen(PORT, () => {
   console.log(`   GET / - Hello World message`);
   console.log(`   GET /api/hello - API endpoint with details`);
   console.log(`   GET /health - Health check endpoint`);
-}); 
+});
+

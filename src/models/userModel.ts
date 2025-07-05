@@ -1,4 +1,5 @@
-const mongoose = require('mongoose');
+import { hasSubscribers } from 'diagnostics_channel';
+import mongoose from 'mongoose';
 
 const UserSchema = new mongoose.Schema({
   fullName: { type: String, required: true },
@@ -6,13 +7,20 @@ const UserSchema = new mongoose.Schema({
   email: { type: String },
   password: { type: String, required: true },
 
-  dob: { type: Date, required: true },
+  // dob: { type: Date, required: true },
   edd: { type: Date, required: true },
-  lmp: { type: Date },
+  // lmp: { type: Date },
   address: { type: String },
-  language: { type: String, default: "English" },
+  // language: { type: String, default: "English" },
 
   clinic: { type: mongoose.Schema.Types.ObjectId, ref: 'Clinic' },
+  
+
+    role: {
+    type: String,
+    enum: ["mother", "health_worker", "admin"],
+    default: "mother"
+  },
 
   reminders: {
     ancVisits: { type: Number, default: 0 },
@@ -44,4 +52,4 @@ const UserSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('User', UserSchema);
+export default mongoose.model('User', UserSchema);
