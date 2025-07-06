@@ -47,6 +47,13 @@ const UserSchema = new mongoose.Schema({
     reminders: { type: Boolean, default: true }
   },
 
+   bankInfo: {
+    bank: { type: String },
+    accountNumber: { type: String },
+    accountName: { type: String }
+  },
+  preferredPaymentMethod: { type: String },
+
   isBeneficiary: { type: Boolean, default: false },
 
   createdAt: { type: Date, default: Date.now }

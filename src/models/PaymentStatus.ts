@@ -35,6 +35,11 @@ const PaymentStatusSchema = new mongoose.Schema({
     enum: ["mobile_money", "bank_transfer", "cash"], 
     default: "mobile_money" 
   },
+
+accountInfo: {
+    bank: String,
+    accountNumber: String,
+  },
   notes: { 
     type: String 
   },

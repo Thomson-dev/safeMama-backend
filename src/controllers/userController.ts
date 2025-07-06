@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/userModel';
 import Clinic from '../models/clinicModal';
+import PaymentStatus from '../models/PaymentStatus';
 
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -185,6 +186,10 @@ export const selectClinic = async (req: AuthenticatedRequest, res: Response): Pr
 };
 
 
+
+
+
+
 export const updateProfile = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user; // This comes from the auth middleware
@@ -232,6 +237,81 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response): P
     res.status(500).json({ error: err.message });
   }
 };
+
+
+
+
+
+
+
+
+
+export const updateBankInfo = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user;
+    const { bank, accountNumber, accountName, preferredPaymentMethod } = req.body;
+
+    // Validate bank info if payment method is bank transfer
+    if (preferredPaymentMethod === 'bank_transfer') {
+      if (!bank || !accountNumber) {
+        res.status(400).json({ msg: "Bank and account number are required for bank transfer" });
+        return;
+      }
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ msg: "User not found" });
+      return;
+    }
+
+    // Update user bank info
+    const updates: any = {
+      preferredPaymentMethod: preferredPaymentMethod || user.preferredPaymentMethod,
+      bankInfo: {
+        bank: bank || user.bankInfo?.bank,
+        accountNumber: accountNumber || user.bankInfo?.accountNumber,
+        accountName: accountName || user.bankInfo?.accountName || user.fullName
+      }
+    };
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updates,
+      { new: true }
+    ).select('-password');
+
+    // Update payment status record if exists
+    const paymentStatus = await PaymentStatus.findOne({ userId });
+    if (paymentStatus) {
+      await PaymentStatus.findByIdAndUpdate(paymentStatus._id, {
+        paymentMethod: preferredPaymentMethod || paymentStatus.paymentMethod,
+        accountInfo: {
+          bank: bank || paymentStatus.accountInfo?.bank,
+          accountNumber: accountNumber || paymentStatus.accountInfo?.accountNumber,
+          // Use accountName if it exists, otherwise fallback to user.fullName
+          accountName: accountName || (paymentStatus.accountInfo && 'accountName' in paymentStatus.accountInfo ? (paymentStatus.accountInfo as any).accountName : user.fullName)
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Bank information updated successfully",
+      user: {
+        id: updatedUser?._id,
+        fullName: updatedUser?.fullName,
+        preferredPaymentMethod: updatedUser?.preferredPaymentMethod,
+        bankInfo: updatedUser?.bankInfo
+      }
+    });
+  } catch (err: any) {
+    console.error("Update bank info error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
 
 export const getUserById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
