@@ -15,14 +15,15 @@ const connectDB = async (): Promise<void> => {
       throw new Error('MONGO_URI environment variable is not set');
     }
 
-    // Simple connection options - NO BUFFER SETTINGS
+    // Connection options with explicit buffer settings
     const options = {
       serverSelectionTimeoutMS: 15000,
       socketTimeoutMS: 45000,
-      maxPoolSize: 5
+      maxPoolSize: 5,
+      bufferCommands: true,        // Add this line
+      bufferMaxEntries: 0          // Add this line
     };
 
-    // DON'T disable buffering - let Mongoose handle it naturally
     const conn = await mongoose.connect(mongoURI, options);
     isConnected = true;
     
