@@ -5,49 +5,36 @@ const connectDB = async (): Promise<void> => {
     const mongoURI = process.env.MONGO_URI;
     
     if (!mongoURI) {
-      console.error('MONGO_URI environment variable is not set');
-      process.exit(1);
+      throw new Error('MONGO_URI environment variable is not set');
     }
 
-    // Clear any existing connections
+    // Skip reconnection if already connected
+    if (mongoose.connection.readyState === 1) return;
+
+    // Disconnect any hanging connections (optional in serverless)
     if (mongoose.connection.readyState !== 0) {
       await mongoose.disconnect();
     }
 
-    // MongoDB Driver Options (for mongoose.connect)
+    // MongoDB Driver Options
     const mongoOptions = {
-      serverSelectionTimeoutMS: 30000, // 30 seconds
-      socketTimeoutMS: 45000,          // 45 seconds
-      connectTimeoutMS: 30000,         // 30 seconds
-      maxPoolSize: 10,                 // Maximum connections
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 30000,
+      maxPoolSize: 10,
       retryWrites: true,
       w: "majority" as const
     };
 
-    // Mongoose-specific settings
     mongoose.set('bufferCommands', false);
-    // mongoose.set('bufferMaxEntries', 0); // Removed: not supported in recent Mongoose versions
 
     await mongoose.connect(mongoURI, mongoOptions);
     console.log('✅ MongoDB Connected Successfully');
-    
+
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error);
-    process.exit(1);
+    throw error; // ⛔ Don't use process.exit in serverless!
   }
 };
-
-// Connection event listeners
-mongoose.connection.on('connected', () => {
-  console.log('📡 Mongoose connected to MongoDB');
-});
-
-mongoose.connection.on('error', (err) => {
-  console.error('❌ Mongoose connection error:', err);
-});
-
-mongoose.connection.on('disconnected', () => {
-  console.log('📡 Mongoose disconnected from MongoDB');
-});
 
 export default connectDB;
