@@ -1,6 +1,13 @@
 import mongoose from 'mongoose';
 
+let isConnected = false;
+
 const connectDB = async (): Promise<void> => {
+  if (isConnected && mongoose.connection.readyState === 1) {
+    console.log('✅ Using existing database connection');
+    return;
+  }
+
   try {
     const mongoURI = process.env.MONGO_URI;
     
@@ -8,33 +15,41 @@ const connectDB = async (): Promise<void> => {
       throw new Error('MONGO_URI environment variable is not set');
     }
 
-    // Skip reconnection if already connected
-    if (mongoose.connection.readyState === 1) return;
-
-    // Disconnect any hanging connections (optional in serverless)
-    if (mongoose.connection.readyState !== 0) {
-      await mongoose.disconnect();
-    }
-
-    // MongoDB Driver Options
-    const mongoOptions = {
-      serverSelectionTimeoutMS: 30000,
+    // Simple connection options - NO BUFFER SETTINGS
+    const options = {
+      serverSelectionTimeoutMS: 15000,
       socketTimeoutMS: 45000,
-      connectTimeoutMS: 30000,
-      maxPoolSize: 10,
-      retryWrites: true,
-      w: "majority" as const
+      maxPoolSize: 5
     };
 
-    mongoose.set('bufferCommands', false);
-
-    await mongoose.connect(mongoURI, mongoOptions);
+    // DON'T disable buffering - let Mongoose handle it naturally
+    const conn = await mongoose.connect(mongoURI, options);
+    isConnected = true;
+    
     console.log('✅ MongoDB Connected Successfully');
-
+    console.log(`📡 Connected to: ${conn.connection.host}`);
+    
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error);
-    throw error; // ⛔ Don't use process.exit in serverless!
+    isConnected = false;
+    throw error;
   }
 };
+
+// Connection event listeners
+mongoose.connection.on('connected', () => {
+  console.log('📡 Mongoose connected to MongoDB');
+  isConnected = true;
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ Mongoose connection error:', err);
+  isConnected = false;
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('📡 Mongoose disconnected from MongoDB');
+  isConnected = false;
+});
 
 export default connectDB;
