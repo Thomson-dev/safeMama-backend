@@ -13,7 +13,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     const { fullName, phone, email, password, edd, address, clinic } = req.body;
 
     // Validate required fields
-    if (!fullName || !phone || !email || !password || !edd) {
+    if (!fullName || !phone || !email || !password || !edd || !address) {
       res.status(400).json({ msg: "Please provide all required fields: fullName, phone, email, password, edd" });
       return;
     }
